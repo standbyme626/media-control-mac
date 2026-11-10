@@ -1,0 +1,14 @@
+[Unit]
+Description=music-web - Bilibili music control page
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/music-web/app.py
+Restart=always
+RestartSec=3
+Environment=MW_PORT=8098
+Environment=MW_MAC=mac
+
+[Install]
+WantedBy=multi-user.target

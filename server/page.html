@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>音乐控制台</title>
+<style>
+:root{
+  --bg:#0e1117; --panel:#151a23; --panel2:#1b2130; --line:#242c3b;
+  --fg:#e9edf6; --dim:#8b95a9; --acc:#4f8cff; --acc2:#6ea8ff; --ok:#35d07f; --warn:#ffb020;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 15% -10%,#1a2334 0%,var(--bg) 55%) fixed;
+  color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+.shell{max-width:1240px;margin:0 auto;padding:26px 28px 40px}
+
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:650;letter-spacing:.2px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
+.badges{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;padding:6px 13px;border-radius:99px;
+  background:#1a2130;color:var(--dim);border:1px solid var(--line);white-space:nowrap}
+.badge i{width:7px;height:7px;border-radius:50%;background:#5a6478;display:block}
+.badge.on{color:#9df0c2;background:#10251a;border-color:#1d4231}
+.badge.on i{background:var(--ok);box-shadow:0 0 9px var(--ok)}
+.badge.warn{color:#ffd79a;background:#2a2110;border-color:#4a3a14}
+.badge.warn i{background:var(--warn)}
+.badge button{background:none;border:none;color:var(--acc2);cursor:pointer;font-size:12.5px;padding:0 0 0 4px;font-family:inherit}
+.badge button:hover{text-decoration:underline}
+
+.layout{display:grid;grid-template-columns:352px minmax(0,1fr);gap:22px;align-items:start}
+.panel{background:linear-gradient(180deg,#171d27,#141922);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel-t{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;font-weight:600}
+.side{position:sticky;top:26px}
+
+.now-t{font-size:17px;font-weight:650;line-height:1.42;margin-bottom:7px;min-height:48px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.now-s{font-size:12.5px;color:var(--dim);margin-bottom:18px}
+.bar{height:4px;border-radius:99px;background:#222a38;overflow:hidden;margin:0 0 6px}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s}
+.times{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);margin-bottom:18px}
+
+.btn{border:1px solid var(--line);background:#202838;color:var(--fg);padding:11px 0;border-radius:11px;
+  font-size:14px;font-weight:550;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:hover{background:#273146;border-color:#35415a}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#4f8cff,#3f76e8);border-color:#4f8cff;color:#fff;box-shadow:0 6px 18px -8px #4f8cff}
+.btn.primary:hover{background:linear-gradient(180deg,#5f97ff,#4a80f0)}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.btns .wide{grid-column:1/-1}
+
+.vol{display:grid;grid-template-columns:auto 1fr 44px;gap:12px;align-items:center;margin-top:6px}
+.vol-l{font-size:13px;color:var(--dim)}
+.vol-v{font-size:12.5px;color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:99px;outline:none;
+  background:linear-gradient(90deg,var(--acc) 0%,var(--acc) var(--p,50%),#242c3b var(--p,50%),#242c3b 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;border:3px solid var(--acc);cursor:pointer;box-shadow:0 2px 6px #0007}
+
+.search{display:flex;gap:11px;margin-bottom:12px}
+.search input{flex:1;min-width:0;background:#11161f;border:1px solid var(--line);color:var(--fg);
+  padding:13px 16px;border-radius:12px;font-size:15px;outline:none;transition:.15s;font-family:inherit}
+.search input:focus{border-color:var(--acc);box-shadow:0 0 0 3px #4f8cff22}
+.search .btn{padding:0 26px;white-space:nowrap}
+
+.refreshbar{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-size:12px;color:var(--dim);
+  padding:0 2px;min-height:22px}
+.refreshbar .sp{flex:1}
+.refreshbar button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;
+  padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+.refreshbar button:hover{color:var(--fg);border-color:#3d5480;background:#1d2534}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;
+  transition:.16s;display:flex;flex-direction:column}
+.card:hover{border-color:#3d5480;transform:translateY(-2px);box-shadow:0 12px 28px -18px #000}
+.card .cover{aspect-ratio:16/9;background:#0c1017;position:relative;overflow:hidden}
+.card .cover img{width:100%;height:100%;object-fit:cover;display:block}
+.card .cover .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:#000a;opacity:0;transition:.16s;font-size:32px;color:#fff}
+.card:hover .cover .play{opacity:1}
+.card .meta{padding:11px 13px 13px}
+.card .t{font-size:13.5px;font-weight:550;line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:39px}
+.card .a{font-size:11.5px;color:var(--dim);margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.loading{opacity:.45;pointer-events:none}
+
+.hint{color:var(--dim);font-size:13.5px;text-align:center;padding:60px 20px;
+  border:1px dashed var(--line);border-radius:14px;line-height:2;grid-column:1/-1}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff44;border-top-color:#fff;
+  border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+
+.mask{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:99;backdrop-filter:blur(3px)}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:540px;width:94%;box-shadow:0 30px 60px -20px #000}
+.modal-t{font-size:15px;font-weight:600;margin-bottom:12px;text-align:center}
+.modal-s{font-size:12.5px;color:var(--dim);text-align:center;margin-bottom:14px}
+.qr-box{background:#fff;border-radius:12px;min-height:220px;display:flex;align-items:center;justify-content:center;padding:14px;overflow:hidden}
+.qr-box img{width:320px;height:320px;max-width:100%;object-fit:contain;display:block;border-radius:6px;
+  image-rendering:-webkit-optimize-contrast;background:#fff;cursor:zoom-in}
+.qr-box img.big{width:100%;height:auto}
+.qr-msg{color:#333;font-size:13px;padding:20px;text-align:center}
+.modal-f{display:flex;gap:10px;margin-top:16px}
+.modal-f .btn{flex:1}
+
+@media(max-width:900px){
+  .shell{padding:16px}
+  .layout{grid-template-columns:1fr;gap:16px}
+  .side{position:static}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .now-t{min-height:0}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="top">
+    <div class="brand"><span class="dot"></span>音乐控制台</div>
+    <div class="badges">
+      <div id="loginBadge" class="badge"><i></i><span>登录检测中</span></div>
+      <div id="btBadge" class="badge"><i></i><span>蓝牙检测中</span></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="side">
+      <div class="panel">
+        <div class="panel-t">正在播放</div>
+        <div id="nowT" class="now-t">还没有在播放的曲目</div>
+        <div id="nowS" class="now-s">在右侧搜索并点击卡片开始</div>
+        <div class="bar"><div id="prog"></div></div>
+        <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+        <div class="btns">
+          <button class="btn primary" id="btnPlay">▶ 播放</button>
+          <button class="btn" id="btnPause">⏸ 暂停</button>
+          <button class="btn wide" id="btnBt">🔗 连接音响</button>
+        </div>
+        <div class="panel-t" style="margin:20px 0 10px">音量</div>
+        <div class="vol">
+          <span class="vol-l">🔊</span>
+          <input type="range" id="vol" min="0" max="100" value="70">
+          <span class="vol-v" id="volv">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="search">
+        <input type="text" id="q" placeholder="搜索 B 站视频，例如：华语老歌 / 周杰伦" autocomplete="off">
+        <button class="btn primary" id="btnSearch">搜索</button>
+      </div>
+      <div class="refreshbar">
+        <span id="refreshInfo">—</span>
+        <span class="sp"></span>
+        <button id="btnRefresh">刷新</button>
+        <button id="btnNextPage">换一批</button>
+      </div>
+      <div id="list" class="grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="qrMask" class="mask" style="display:none">
+  <div class="modal">
+    <div class="modal-t">扫码登录 B 站</div>
+    <div class="modal-s">打开 B 站 App → 扫一扫 → 扫下方二维码（登录态会长期保存在 Mac 的专用浏览器里）</div>
+    <div id="qrBox" class="qr-box"><div class="qr-msg">正在让 Mac 打开登录页…</div></div>
+    <div class="modal-f">
+      <button class="btn" id="qrRefresh">刷新二维码</button>
+      <button class="btn" id="qrClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var lastQuery = '';
+var searchPage = 1;
+var lastRefresh = 0;
+var AUTO_MS = 10 * 60 * 1000;
+var busy = false;
+
+function $(id){ return document.getElementById(id); }
+function fmt(s){ if(!s) return '0:00'; var m=Math.floor(s/60); return m + ':' + String(s%60).padStart(2,'0'); }
+function fmtTime(ts){ var d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+function setBadge(id, on, text, warn, btnText, btnFn){
+  var el = $(id);
+  el.className = 'badge' + (on ? ' on' : (warn ? ' warn' : ''));
+  el.innerHTML = '<i></i><span>' + esc(text) + '</span>';
+  if(btnText){
+    var b = document.createElement('button');
+    b.textContent = btnText;
+    b.onclick = btnFn;
+    el.appendChild(b);
+  }
+}
+
+async function api(path, opts){
+  var r = await fetch(path, Object.assign({headers:{'X-Requested-With':'mw'}}, opts||{}));
+  return await r.json().catch(function(){ return null; });
+}
+
+function updateRefreshInfo(){
+  var el = $('refreshInfo');
+  if(!lastRefresh){ el.textContent = '—'; return; }
+  var remain = Math.max(0, AUTO_MS - (Date.now() - lastRefresh));
+  if(remain <= 0){ el.textContent = '上次 ' + fmtTime(lastRefresh) + ' · 即将刷新'; return; }
+  var m = Math.floor(remain / 60000);
+  var s = Math.floor((remain % 60000) / 1000);
+  el.textContent = '上次 ' + fmtTime(lastRefresh) + ' · ' + m + '分' + String(s).padStart(2,'0') + '秒后自动刷新';
+}
+setInterval(updateRefreshInfo, 1000);
+
+async function refresh(){
+  try{
+    var s = await api('/api/status');
+    if(!s) return;
+    if(s.bt) setBadge('btBadge', s.bt.connected, s.bt.connected ? '音响已连接' : '音响未连接');
+    if(typeof s.logged === 'boolean'){
+      if(s.logged) setBadge('loginBadge', true, 'B站已登录');
+      else setBadge('loginBadge', false, 'B站未登录', true, '去登录', doLogin);
+    }
+    if(typeof s.volume === 'number' && s.volume >= 0){
+      var v = $('vol');
+      v.value = s.volume;
+      v.style.setProperty('--p', s.volume + '%');
+      $('volv').textContent = s.volume;
+    }
+    if(s.tab){
+      $('nowT').textContent = (s.title || s.tab.title || 'B 站').slice(0,120);
+      $('nowS').textContent = s.hasVideo ? (s.paused ? '已暂停' : '播放中') : '页面已打开，尚未加载视频';
+      var dur = s.duration || 0, cur = s.time || 0;
+      $('prog').style.width = dur ? (cur/dur*100).toFixed(1) + '%' : '0%';
+      $('tCur').textContent = fmt(cur);
+      $('tDur').textContent = fmt(dur);
+    }else{
+      $('nowS').textContent = '受控浏览器尚未打开页面';
+    }
+  }catch(e){}
+}
+
+async function doLogin(){
+  $('qrMask').style.display = 'flex';
+  $('qrBox').innerHTML = '<div class="qr-msg">正在让 Mac 上的浏览器打开登录页…</div>';
+  try{
+    var r = await api('/api/qr');
+    if(r && r.ok && r.png){
+      $('qrBox').innerHTML = '<img src="data:image/png;base64,' + r.png + '" alt="B站登录二维码">';
+      setTimeout(refresh, 2000);
+    }else{
+      $('qrBox').innerHTML = '<div class="qr-msg">打开失败：' + esc((r && r.error) || '未知错误') + '</div>';
+    }
+  }catch(e){
+    $('qrBox').innerHTML = '<div class="qr-msg">打开失败：' + esc(e.message) + '</div>';
+  }
+}
+$('qrClose').onclick = function(){ $('qrMask').style.display = 'none'; refresh(); };
+$('qrRefresh').onclick = function(){ doLogin(); };
+$('qrBox').onclick = function(e){
+  if(e.target.tagName === 'IMG') e.target.classList.toggle('big');
+};
+
+async function searchVideos(opts){
+  opts = opts || {};
+  var q = (opts.q !== undefined ? opts.q : $('q').value).trim();
+  if(!q) return;
+  if(opts.page !== undefined) searchPage = Math.max(1, Math.min(50, opts.page));
+  else if(!opts.silent) searchPage = 1;
+
+  var box = $('list');
+  var btn = $('btnSearch');
+  if(!opts.silent){
+    box.innerHTML = '<div class="hint">正在让 Mac 上的浏览器搜索 B 站…<br>首次大约需要 8-20 秒</div>';
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 搜索中';
+  }else{
+    $('refreshInfo').textContent = '刷新中…';
+  }
+  try{
+    var r = await api('/api/search?q=' + encodeURIComponent(q) + '&page=' + searchPage);
+    if(!r || !r.ok){ if(!opts.silent) box.innerHTML = '<div class="hint">搜索失败：' + esc((r&&r.error)||'未知') + '</div>'; return; }
+    render(r.items || []);
+    lastQuery = q;
+    lastRefresh = Date.now();
+    updateRefreshInfo();
+  }catch(e){
+    if(!opts.silent) box.innerHTML = '<div class="hint">搜索失败：' + esc(e.message) + '</div>';
+  }finally{
+    if(!opts.silent){ btn.disabled = false; btn.textContent = '搜索'; }
+  }
+}
+
+function manualRefresh(){
+  if(lastQuery) searchVideos({q:lastQuery, page:searchPage, silent:true});
+  else $('refreshInfo').textContent = '先搜索一个关键词';
+}
+function nextPage(){
+  if(!lastQuery){ $('refreshInfo').textContent = '先搜索一个关键词'; return; }
+  searchVideos({q:lastQuery, page:searchPage + 1});
+}
+
+function render(items){
+  var box = $('list');
+  if(!items.length){
+    box.innerHTML = '<div class="hint">没抓到结果。<br>确认受控浏览器已打开 B 站并完成登录。</div>';
+    return;
+  }
+  box.innerHTML = items.map(function(it){
+    var cover = it.cover || '';
+    if(cover.indexOf('//') === 0) cover = 'https:' + cover;
+    else if(cover.indexOf('http:') === 0) cover = 'https:' + cover.slice(5);
+    return '<div class="card" data-bv="' + it.bv + '">' +
+      '<div class="cover">' + (cover ? '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' : '') +
+      '<div class="play">▶</div></div>' +
+      '<div class="meta"><div class="t">' + esc(it.title || it.bv) + '</div>' +
+      '<div class="a">' + esc(it.author || '') + '</div></div></div>';
+  }).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('.card'), function(el){
+    el.onclick = async function(){
+      el.classList.add('loading');
+      await fetch('/api/open?bv=' + el.dataset.bv, {method:'POST'});
+      el.classList.remove('loading');
+      setTimeout(refresh, 1600);
+    };
+  });
+}
+
+window.__render = render;   // 供截图/调试直接渲染
+$('btnSearch').onclick = function(){ searchVideos(); };
+$('q').addEventListener('keydown', function(e){ if(e.key === 'Enter') searchVideos(); });
+$('btnRefresh').onclick = manualRefresh;
+$('btnNextPage').onclick = nextPage;
+$('btnPlay').onclick = async function(){ await api('/api/play',{method:'POST'}); setTimeout(refresh,400); };
+$('btnPause').onclick = async function(){ await api('/api/pause',{method:'POST'}); setTimeout(refresh,400); };
+$('btnBt').onclick = async function(e){
+  var b = e.currentTarget; b.disabled = true; b.textContent = '连接中…';
+  await fetch('/api/bt?action=connect',{method:'POST'});
+  b.disabled = false; b.textContent = '🔗 连接音响';
+  setTimeout(refresh, 1200);
+};
+var volEl = $('vol');
+volEl.oninput = function(e){
+  e.target.style.setProperty('--p', e.target.value + '%');
+  $('volv').textContent = e.target.value;
+};
+volEl.onchange = function(e){ fetch('/api/volume?level=' + e.target.value, {method:'POST'}); };
+
+// 10 分钟自动刷新：只在页面可见时执行
+setInterval(function(){
+  if(document.hidden) return;
+  if(lastRefresh && Date.now() - lastRefresh >= AUTO_MS) manualRefresh();
+}, 30000);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && lastRefresh && Date.now() - lastRefresh >= AUTO_MS) manualRefresh();
+});
+
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>

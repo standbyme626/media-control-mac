@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.musicweb.bridge</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/YOURNAME/music-bridge/bridge.py</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MB_BT_ADDR</key><string>AA-BB-CC-DD-EE-FF</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>/tmp/music-bridge.out.log</string>
+    <key>StandardErrorPath</key><string>/tmp/music-bridge.err.log</string>
+</dict>
+</plist>
